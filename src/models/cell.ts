@@ -1,15 +1,19 @@
 import { Coordinates } from './coordinates';
 import { CellStates } from 'src/enums/cell-states.enum';
 import * as p5 from 'p5';
-import { Globals } from 'src/app/globals';
+import { Globals } from 'src/utils/globals';
+import { Field } from './field';
 
 export class Cell {
 
   public state: CellStates;
   public coordinates: Coordinates;
 
-  constructor() {
+  private field: Field;
+
+  constructor(field: Field) {
     this.state = CellStates.empty;
+    this.field = field;
   }
 
   public draw(p: p5) {
@@ -40,7 +44,9 @@ export class Cell {
   }
 
   private drawBase(p: p5) {
-    p.rect(this.coordinates.x, this.coordinates.y, Globals.cellSize, Globals.cellSize);
+    p.stroke(100);
+    p.strokeWeight(2);
+    p.square(this.coordinates.x, this.coordinates.y, Globals.cellSize);
   }
 
   private drawFull(p: p5) {
@@ -52,6 +58,7 @@ export class Cell {
     p.fill(255);
     this.drawBase(p);
     p.fill(0);
+    p.stroke(0);
     let x1: number = this.coordinates.x + 3;
     let y1: number = this.coordinates.y + 3;
     let x2: number = this.coordinates.x + Globals.cellSize - 3;

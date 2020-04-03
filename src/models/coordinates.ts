@@ -2,12 +2,16 @@ export class Coordinates {
   x: number;
   y: number;
 
-  constructor(size?: { x: number, y: number }) {
-    this.x = size && size.x || 0;
-    this.y = size && size.y || 0;
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
   }
 
   multiply(size: Coordinates) {
-    return new Coordinates({ x: this.x * size.x, y: this.y * size.y })
+    return new Coordinates(this.x * size.x, this.y * size.y)
+  }
+
+  add(size: Coordinates) {
+    return new Coordinates(this.x + size.x, this.y + size.y)
   }
 }

@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import * as p5 from 'p5';
 import { Field } from 'src/models/field';
-import { Globals } from 'src/app/globals';
+import { Globals } from 'src/utils/globals';
 import { Coordinates } from 'src/models/coordinates';
+import { Solution } from 'src/models/solution';
 
 @Component({
   selector: 'app-game',
@@ -19,9 +20,12 @@ export class GameComponent implements OnInit {
   ngOnInit() {
     document.oncontextmenu = () => false;
 
-    let fieldSize: Coordinates = new Coordinates({ x: 10, y: 15 });
+    let fieldSize: Coordinates = new Coordinates(3, 2);
     this.field = new Field(fieldSize);
-    Globals.canvasSize = fieldSize.multiply(new Coordinates({ x: Globals.cellSize, y: Globals.cellSize }));
+    this.field.setSolution(new Solution([[1, 1], [1]], [[2], [], [1]]));
+    Globals.canvasSize = fieldSize
+      .multiply(new Coordinates(Globals.cellSize, Globals.cellSize))
+      .add(this.field.offset);
     this.createCanvas();
   }
 
@@ -29,15 +33,15 @@ export class GameComponent implements OnInit {
     this.p5 = new p5((p) => this.sketch(p, this));
   }
 
-  isMouseOnCanvas(offsetX: number, offsetY: number): boolean {
-    return (offsetX > 0 && offsetX < Globals.canvasSize.x)
-        && (offsetY > 0 && offsetY < Globals.canvasSize.y);
+  isMouseOnField(offsetX: number, offsetY: number): boolean {
+    return (offsetX > this.field.offset.x && offsetX < Globals.canvasSize.x)
+        && (offsetY > this.field.offset.y && offsetY < Globals.canvasSize.y);
   }
 
   sketch(p: p5, self: this) {
     p.setup = () => {
       p.createCanvas(Globals.canvasSize.x, Globals.canvasSize.y);
-      p.background(55);
+      p.background(200);
     };
 
     p.draw = () => {
@@ -46,7 +50,7 @@ export class GameComponent implements OnInit {
     };
 
     p.mousePressed = (e) => {
-      if (!self.isMouseOnCanvas(p.mouseX, p.mouseY)) {
+      if (!self.isMouseOnField(p.mouseX, p.mouseY)) {
         return;
       }
       self.field.onMousePressed(p);
