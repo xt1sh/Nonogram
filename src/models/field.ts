@@ -6,18 +6,22 @@ import { Solution } from './solution';
 import { CellStates } from 'src/enums/cell-states.enum';
 import { compact } from 'lodash';
 import { Utilities } from 'src/utils/utilities';
+import { CellClickStates } from 'src/enums/cell-click-states.enum';
 
 export class Field {
   public width: number;
   public height: number;
   public cells: Cell[][];
   public offset: Coordinates;
+  public fullCellsAmount: number;
+  public cellClickState: CellClickStates;
 
   private fieldSize: Coordinates;
   private solution: Solution;
   private solutionCellsAmount: number;
 
   constructor(fieldSize: Coordinates) {
+    this.fullCellsAmount = 0;
     let cellSize = Globals.cellSize;
     this.cells = [];
     this.offset = new Coordinates(Globals.cellSize * Math.ceil(fieldSize.x / 2), Globals.cellSize * Math.ceil(fieldSize.y / 2))
@@ -45,11 +49,15 @@ export class Field {
     }
   }
 
-  onMouseMove(e: MouseEvent) {
-
+  onMousePressed(p: p5) {
+    let cellCoordinates = this.getCellIndex(p.mouseX, p.mouseY);
+    this.cells[cellCoordinates.y][cellCoordinates.x].onClick(p);
+    if (this.isSolved()) {
+      console.log('gj')
+    }
   }
 
-  onMousePressed(p: p5) {
+  onMouseMove(p: p5) {
     let cellCoordinates = this.getCellIndex(p.mouseX, p.mouseY);
     if (p.mouseButton === p.LEFT) {
       this.cells[cellCoordinates.y][cellCoordinates.x].onLKMDown();
@@ -133,8 +141,7 @@ export class Field {
   }
 
   private isSolved(): boolean {
-    let fullCellsAmount = this.getFullCellsAmount();
-    if (fullCellsAmount != this.solutionCellsAmount) {
+    if (this.fullCellsAmount != this.solutionCellsAmount) {
       return false;
     }
     let rowMask: number[] = [];
@@ -154,6 +161,25 @@ export class Field {
       }
       rowMask.push(counter);
       if (!Utilities.areArraysEqual(this.solution.xSolution[i], compact(rowMask))) {
+        return false;
+      }
+      counter = lastCount = 0;
+      rowMask = [];
+    }
+    for (let i = 0; i < this.fieldSize.x; i++) {
+      for (let j = 0; j < this.fieldSize.y; j++) {
+        lastCount = counter;
+        if (this.cells[j][i].state === CellStates.true) {
+          counter++;
+        } else {
+          counter = 0;
+        }
+        if (counter === 0) {
+          rowMask.push(lastCount);
+        }
+      }
+      rowMask.push(counter);
+      if (!Utilities.areArraysEqual(this.solution.ySolution[i], compact(rowMask))) {
         return false;
       }
       counter = lastCount = 0;

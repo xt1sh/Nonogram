@@ -3,10 +3,12 @@ import { CellStates } from 'src/enums/cell-states.enum';
 import * as p5 from 'p5';
 import { Globals } from 'src/utils/globals';
 import { Field } from './field';
+import { CellClickStates } from 'src/enums/cell-click-states.enum';
 
 export class Cell {
 
   public state: CellStates;
+  public prevState: CellStates;
   public coordinates: Coordinates;
 
   private field: Field;
@@ -27,20 +29,67 @@ export class Cell {
     }
   }
 
+  public onClick(p: p5) {
+    if (p.mouseButton === p.LEFT) {
+      if (this.state === CellStates.true) {
+        this.changeState(CellStates.empty);
+      } else {
+        this.changeState(CellStates.true);
+      }
+    } else if (p.mouseButton === p.RIGHT) {
+      if (this.state === CellStates.false) {
+        this.changeState(CellStates.empty);
+      } else  {
+        this.changeState(CellStates.false);
+      }
+    }
+    if (this.prevState === CellStates.empty) {
+      if (this.state === CellStates.true) {
+        this.field.cellClickState = CellClickStates.emptyTrue;
+      } else {
+        this.field.cellClickState = CellClickStates.emptyFalse;
+      }
+    } else if (this.prevState === CellStates.true) {
+      if (this.state === CellStates.empty) {
+        this.field.cellClickState = CellClickStates.trueEmpty;
+      } else {
+        this.field.cellClickState = CellClickStates.trueFalse;
+      }
+    } else if (this.prevState === CellStates.false) {
+      if (this.state === CellStates.empty) {
+        this.field.cellClickState = CellClickStates.falseEmpty;
+      } else {
+        this.field.cellClickState = CellClickStates.falseTrue;
+      }
+    }
+  }
+
   public onLKMDown() {
-    if (this.state === CellStates.true) {
-      this.state = CellStates.empty;
-    } else {
-      this.state = CellStates.true;
+    if (this.state === CellStates.true && this.field.cellClickState === CellClickStates.trueEmpty) {
+      this.changeState(CellStates.empty);
+    } else if ((this.field.cellClickState === CellClickStates.falseTrue || this.field.cellClickState === CellClickStates.emptyTrue)
+            && (this.field.cellClickState !== CellClickStates.emptyTrue || this.state !== CellStates.false)) {
+      this.changeState(CellStates.true);
     }
   }
 
   public onRKMDown() {
-    if (this.state === CellStates.false) {
-      this.state = CellStates.empty;
-    } else {
-      this.state = CellStates.false;
+    if (this.state === CellStates.false && this.field.cellClickState === CellClickStates.falseEmpty) {
+      this.changeState(CellStates.empty);
+    } else if ((this.field.cellClickState === CellClickStates.trueFalse || this.field.cellClickState === CellClickStates.emptyFalse)
+            && (this.field.cellClickState !== CellClickStates.emptyFalse || this.state !== CellStates.true)) {
+      this.changeState(CellStates.false);
     }
+  }
+
+  private changeState(state: CellStates) {
+    if ((this.state === CellStates.empty || this.state === CellStates.false) && state === CellStates.true) {
+      this.field.fullCellsAmount++;
+    } else if (this.state === CellStates.true && (state === CellStates.empty || state === CellStates.false)) {
+      this.field.fullCellsAmount--;
+    }
+    this.prevState = this.state;
+    this.state = state;
   }
 
   private drawBase(p: p5) {

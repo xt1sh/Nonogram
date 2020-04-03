@@ -56,8 +56,11 @@ export class GameComponent implements OnInit {
       self.field.onMousePressed(p);
     };
 
-    p.mouseMoved = (e) => {
-
+    p.mouseDragged = (e) => {
+      if (!self.isMouseOnField(p.mouseX, p.mouseY)) {
+        return;
+      }
+      self.field.onMouseMove(p);
     };
   }
 }
