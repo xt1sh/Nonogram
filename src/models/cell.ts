@@ -94,7 +94,7 @@ export class Cell {
 
   private drawBase(p: p5) {
     p.stroke(100);
-    p.strokeWeight(2);
+    p.strokeWeight(1);
     p.square(this.coordinates.x, this.coordinates.y, Globals.cellSize);
   }
 
@@ -108,6 +108,7 @@ export class Cell {
     this.drawBase(p);
     p.fill(0);
     p.stroke(0);
+    p.strokeWeight(2);
     let x1: number = this.coordinates.x + 3;
     let y1: number = this.coordinates.y + 3;
     let x2: number = this.coordinates.x + Globals.cellSize - 3;

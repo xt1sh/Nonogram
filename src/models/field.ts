@@ -15,6 +15,7 @@ export class Field {
   public offset: Coordinates;
   public fullCellsAmount: number;
   public cellClickState: CellClickStates;
+  public conditionCellsAmount: Coordinates;
 
   private fieldSize: Coordinates;
   private solution: Solution;
@@ -22,21 +23,6 @@ export class Field {
 
   constructor(fieldSize: Coordinates) {
     this.fullCellsAmount = 0;
-    let cellSize = Globals.cellSize;
-    this.cells = [];
-    this.offset = new Coordinates(Globals.cellSize * Math.ceil(fieldSize.x / 2), Globals.cellSize * Math.ceil(fieldSize.y / 2))
-    let x = this.offset.x;
-    let y = this.offset.y;
-    for (let i = 0; i < fieldSize.y; i++) {
-      this.cells[i] = [];
-      for (let j = 0; j < fieldSize.x; j++) {
-        this.cells[i][j] = new Cell(this);
-        this.cells[i][j].coordinates = new Coordinates(x, y);
-        x += cellSize;
-      }
-      y += cellSize;
-      x = this.offset.x;
-    }
     this.fieldSize = fieldSize;
   }
 
@@ -47,13 +33,14 @@ export class Field {
         cell.draw(p);
       }
     }
+    this.drawHelpLines(p);
   }
 
   onMousePressed(p: p5) {
     let cellCoordinates = this.getCellIndex(p.mouseX, p.mouseY);
     this.cells[cellCoordinates.y][cellCoordinates.x].onClick(p);
     if (this.isSolved()) {
-      console.log('gj')
+      this.win();
     }
   }
 
@@ -65,50 +52,86 @@ export class Field {
       this.cells[cellCoordinates.y][cellCoordinates.x].onRKMDown();
     }
     if (this.isSolved()) {
-      console.log('gj')
+      this.win();
     }
   }
 
   setSolution(solution: Solution) {
     this.solution = solution;
     this.solutionCellsAmount = this.getSolutionCellsAmount();
+    let cellSize = Globals.cellSize;
+    this.cells = [];
+    let maxRowLength = 0;
+    let maxColLength = 0;
+    solution.rowClues.forEach(row => {
+      if (row.length > maxColLength) maxColLength = row.length;
+    });
+    solution.colClues.forEach(col => {
+      if (col.length > maxRowLength) maxRowLength = col.length;
+    })
+    this.conditionCellsAmount = new Coordinates(maxRowLength, maxColLength);
+    this.offset = new Coordinates(Globals.cellSize * maxRowLength, Globals.cellSize * maxColLength)
+    let x = this.offset.x;
+    let y = this.offset.y;
+    for (let i = 0; i < this.fieldSize.y; i++) {
+      this.cells[i] = [];
+      for (let j = 0; j < this.fieldSize.x; j++) {
+        this.cells[i][j] = new Cell(this);
+        this.cells[i][j].coordinates = new Coordinates(x, y);
+        x += cellSize;
+      }
+      y += cellSize;
+      x = this.offset.x;
+    }
   }
 
   private drawConditionCells(p: p5) {
     let cellSize = Globals.cellSize;
-    let xAmount = Math.ceil(this.fieldSize.x / 2);
-    let yAmount = Math.ceil(this.fieldSize.y / 2);
     p.textAlign(p.CENTER, p.CENTER);
-    p.textSize(18);
+    p.textSize(14);
+    p.strokeWeight(1);
     for (let i = 0; i < this.fieldSize.y; i++) {
-      p.fill(155);
-      p.stroke(100);
-      for (let j = 0; j < xAmount; j++) {
-        p.square(j * cellSize, this.offset.y + i * cellSize, cellSize);
-      }
-      p.fill(0);
-      p.noStroke();
-      for (let j = xAmount - 1; j >= 0; j--) {
-        let x = j * cellSize + 2;
-        let y = this.offset.y + i * cellSize + 2;
-        let solution = this.solution.xSolution[i][Math.ceil(j / 2)] || '';
+      let counter = 0;
+      for (let j = this.conditionCellsAmount.x - 1; j >= 0; j--) {
+        let x = j * cellSize;
+        let y = this.offset.y + i * cellSize;
+        p.fill(155);
+        p.stroke(100);
+        p.square(x, y, cellSize);
+        p.fill(0);
+        p.noStroke();
+        let solution = this.solution.colClues[i][this.solution.colClues[i].length - counter - 1] || '';
         p.text(solution, x , y, cellSize, cellSize);
+        counter++;
       }
     }
     for (let i = 0; i < this.fieldSize.x; i++) {
-      p.fill(155);
-      p.stroke(100);
-      for (let j = 0; j < yAmount; j++) {
-        p.square(this.offset.x + i * cellSize, j * cellSize, cellSize);
-      }
-      p.fill(0);
-      p.noStroke();
-      for (let j = yAmount - 1; j >= 0; j--) {
-        let x = this.offset.x + i * cellSize + 2;
-        let y = j * cellSize + 2;
-        let solution = this.solution.ySolution[i][Math.ceil(j / 2)] || '';
+      let counter = 0;
+      for (let j = this.conditionCellsAmount.y - 1; j >= 0; j--) {
+        let x = this.offset.x + i * cellSize;
+        let y = j * cellSize;
+        p.fill(155);
+        p.stroke(100);
+        p.square(x, y, cellSize);
+        let solution = this.solution.rowClues[i][this.solution.rowClues[i].length - counter - 1] || '';
+        p.fill(0);
+        p.noStroke();
         p.text(solution, x, y, cellSize, cellSize);
+        counter++;
       }
+    }
+  }
+
+  private drawHelpLines(p: p5) {
+    p.stroke(180);
+    p.strokeWeight(3);
+    for (let i = 5; i < this.fieldSize.y; i += 5) {
+      let y = this.offset.y + i * Globals.cellSize;
+      p.line(0, y, Globals.canvasSize.x, y);
+    }
+    for (let i = 5; i < this.fieldSize.x; i += 5) {
+      let x = this.offset.x + i * Globals.cellSize;
+      p.line(x, 0, x, Globals.canvasSize.y);
     }
   }
 
@@ -120,7 +143,7 @@ export class Field {
 
   private getSolutionCellsAmount(): number {
     let sum = 0;
-    this.solution.xSolution.forEach((row) => {
+    this.solution.colClues.forEach((row) => {
       row.forEach(element => {
         sum += element;
       })
@@ -160,7 +183,7 @@ export class Field {
         }
       }
       rowMask.push(counter);
-      if (!Utilities.areArraysEqual(this.solution.xSolution[i], compact(rowMask))) {
+      if (!Utilities.areArraysEqual(this.solution.colClues[i], compact(rowMask))) {
         return false;
       }
       counter = lastCount = 0;
@@ -179,12 +202,16 @@ export class Field {
         }
       }
       rowMask.push(counter);
-      if (!Utilities.areArraysEqual(this.solution.ySolution[i], compact(rowMask))) {
+      if (!Utilities.areArraysEqual(this.solution.rowClues[i], compact(rowMask))) {
         return false;
       }
       counter = lastCount = 0;
       rowMask = [];
     }
     return true;
+  }
+
+  private win() {
+    alert('gj');
   }
 }
